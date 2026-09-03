@@ -6,10 +6,15 @@
 <title>dekdein. — Marketplace Prototype</title>
 <link rel="stylesheet" href="styles.css">
 </head>
+<!--
+  Supabase config: env.js is generated at build time from environment
+  variables (see scripts/generate-env.js) and is NOT committed to git.
+  For local development, copy env.example.js to env.js and fill in your
+  own project's URL + anon key.
+-->
 <body>
 <div class="app-root">
   <div class="device" id="device">
-    
 
     <!-- 1) SPLASH -->
     <section class="screen-page no-nav" data-screen="splash">
@@ -28,16 +33,26 @@
         <div class="logo-big">dekdein<i>.</i></div>
         <div class="title">ยินดีต้อนรับกลับ</div>
         <p class="muted">เข้าสู่ระบบเพื่อจ้างงาน รับงาน แชท และจัดการทุกอย่างในที่เดียว</p>
-        <div class="field"><label>อีเมล</label><input type="email" placeholder="คุณ@example.com"></div>
-        <div class="field"><label>รหัสผ่าน</label><input type="password" placeholder="••••••••"></div>
-        <button class="primary" data-action="login-submit">เข้าสู่ระบบ</button>
+        <div class="field-msg error" id="authError" style="display:none"></div>
+        <div class="field-msg success" id="authSuccess" style="display:none"></div>
+        <div class="field" id="authNameField" style="display:none"><label>ชื่อ-นามสกุล</label><input type="text" id="authFullName" placeholder="ชื่อของคุณ"></div>
+        <div class="field"><label>อีเมล</label><input type="email" id="authEmail" placeholder="คุณ@example.com"></div>
+        <div class="field"><label>รหัสผ่าน</label><input type="password" id="authPassword" placeholder="••••••••"></div>
+        <div class="field" id="authRoleField" style="display:none">
+          <label>ประเภทผู้ใช้งาน</label>
+          <div class="chips" data-chipgroup="role" id="authRoleChips" style="padding:6px 0 0">
+            <span class="chip active" data-role="customer">ลูกค้า (ต้องการจ้างงาน)</span>
+            <span class="chip" data-role="provider">ผู้ให้บริการ (รับงาน)</span>
+          </div>
+        </div>
+        <button class="primary" id="authSubmitBtn" data-action="auth-submit">เข้าสู่ระบบ</button>
         <div class="row between" style="margin:16px 0"><span class="small">หรือเข้าสู่ระบบด้วย</span><span class="small orange" data-toast="รีเซ็ตรหัสผ่าน (ยังไม่เปิดใช้งานใน prototype)">ลืมรหัสผ่าน?</span></div>
         <div class="social">
           <button data-toast="เข้าสู่ระบบด้วย Google (prototype)">G</button>
           <button data-toast="เข้าสู่ระบบด้วย Facebook (prototype)"></button>
           <button data-toast="เข้าสู่ระบบด้วยอีเมล (prototype)">✉</button>
         </div>
-        <p class="small" style="text-align:center;margin-top:20px">ยังไม่มีบัญชี? <b class="orange" data-toast="สมัครสมาชิก (ยังไม่เปิดใช้งานใน prototype)">สร้างบัญชี</b></p>
+        <p class="small" style="text-align:center;margin-top:20px" id="authToggleRow"><span id="authToggleText">ยังไม่มีบัญชี?</span> <b class="orange" id="authToggleLink" data-action="toggle-auth-mode">สร้างบัญชี</b></p>
       </div>
     </section>
 
@@ -145,8 +160,8 @@
         <div class="row gap12">
           <div class="avatar lg"></div>
           <div>
-            <div class="row gap8"><b style="font-size:20px">เบน</b><span class="status">● ออนไลน์</span></div>
-            <div class="small" style="color:#d8dce1;margin-top:3px">ย้ายของ · ขนส่ง · ซ่อมแซม</div>
+            <div class="row gap8"><b style="font-size:20px" id="profileHeroName">เบน</b><span class="status">● ออนไลน์</span></div>
+            <div class="small" style="color:#d8dce1;margin-top:3px" id="profileHeroTagline">ย้ายของ · ขนส่ง · ซ่อมแซม</div>
             <div class="rating" style="margin-top:6px">★ 4.93 <span style="color:#d8dce1">(127 รีวิว)</span></div>
           </div>
         </div>
@@ -156,13 +171,16 @@
           <div class="stat"><b>98%</b><span>ตรงเวลา</span></div>
         </div>
       </div>
-      <button class="primary" style="margin-top:12px" data-action="match-provider" data-name="เบน">แมตช์กับ เบน</button>
+      <button class="primary" style="margin-top:12px" id="profileMatchBtn" data-action="match-provider" data-name="เบน">แมตช์กับ เบน</button>
       <div class="section-title">ทักษะ</div>
       <div class="chips" data-chipgroup="skills"><span class="chip active">ย้ายของ</span><span class="chip">เฟอร์นิเจอร์</span><span class="chip">ขนส่ง</span><span class="chip">ซ่อมแซม</span></div>
       <div class="section-title">ผลงานล่าสุด</div>
       <div class="gallery"><div class="pic"></div><div class="pic"></div><div class="pic"></div></div>
       <div class="section-title">รีวิว <span class="rating">★ 4.93</span></div>
       <div class="card"><b>“ทำงานเร็ว สุภาพ และรอบคอบ”</b><p class="small">งานย้ายของเสร็จแล้ว · 2 สัปดาห์ก่อน</p></div>
+      <p class="small" id="profileLogoutRow" style="text-align:center;margin-top:20px;display:none">
+        <b class="orange" data-action="logout">ออกจากระบบ</b>
+      </p>
     </section>
 
     <!-- 8) CHAT -->
@@ -286,7 +304,7 @@
       <a data-go="my-jobs" data-navid="jobs"><b><span class="svg-ico">▣</span></b>งาน</a>
       <a data-go="chat" data-navid="chat"><b><span class="svg-ico">◌</span></b>แชท</a>
       <a data-go="ranking" data-navid="ranking"><b><span class="svg-ico">☆</span></b>อันดับ</a>
-      <a data-go="provider-profile" data-navid="profile"><b><span class="svg-ico">♙</span></b>โปรไฟล์</a>
+      <a data-action="view-my-profile" data-navid="profile"><b><span class="svg-ico">♙</span></b>โปรไฟล์</a>
     </div>
 
     <!-- toast -->
@@ -308,6 +326,8 @@
 
   </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="env.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

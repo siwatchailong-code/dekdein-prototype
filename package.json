@@ -1,0 +1,9 @@
+{
+  "name": "dekdein-prototype",
+  "private": true,
+  "version": "0.1.0",
+  "description": "dekdein. — static HTML/CSS/JS app with Supabase Auth. No framework, no bundler.",
+  "scripts": {
+    "build": "node scripts/generate-env.js"
+  }
+}

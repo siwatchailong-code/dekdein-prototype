@@ -248,3 +248,8 @@ a{text-decoration:none;color:inherit}
 [data-action],[data-go],[data-back],[data-toast]{cursor:pointer}
 .chip{cursor:pointer}
 .nav a{cursor:pointer}
+
+/* ---------- auth: error / success message states (added for real Supabase auth) ---------- */
+.field-msg{font-size:12px;line-height:1.55;margin:10px 0;padding:11px 13px;border-radius:14px}
+.field-msg.error{background:#fff1f0;color:#e0393e;border:1px solid #ffd3d1}
+.field-msg.success{background:#eefaf1;color:#18a05e;border:1px solid #cdeedd}

@@ -1,6 +1,9 @@
 /* =========================================================================
-   dekdein. — Frontend Prototype interactions
-   No backend, no API, no auth — client-side state only.
+   dekdein. — app interactions
+   Auth + profile are wired to Supabase (see supabase/schema.sql).
+   Everything else (jobs, chat, ranking, challenges, matching) is still
+   static prototype data — not connected to a backend. See the project
+   README / delivery notes for exactly which parts are real vs. prototype.
    ========================================================================= */
 
 (function () {
@@ -12,6 +15,26 @@
   var toastEl = document.getElementById('toast');
   var history_ = ['splash'];
   var current = 'splash';
+
+  /* ---------------- Supabase client ---------------- */
+  var ENV = window.__ENV__ || {};
+  var sb = null;
+  if (window.supabase && ENV.SUPABASE_URL && ENV.SUPABASE_ANON_KEY) {
+    sb = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_ANON_KEY);
+  } else {
+    console.error(
+      'Missing Supabase config. Copy env.example.js to env.js and fill in ' +
+      'your project URL + anon key (local dev), or set SUPABASE_URL / ' +
+      'SUPABASE_ANON_KEY as environment variables in Vercel (production).'
+    );
+  }
+
+  /* ---------------- auth state ---------------- */
+  var currentUser = null;     // supabase auth user object
+  var currentProfile = null;  // row from public.profiles
+  var authMode = 'login';     // 'login' | 'signup'
+  var viewingSelfProfile = false;
+  var PUBLIC_SCREENS = ['splash', 'login'];
 
   /* ---------------- toast ---------------- */
   var toastTimer = null;
@@ -53,6 +76,16 @@
   function go(id, opts) {
     opts = opts || {};
     if (!screenById(id)) return;
+
+    // route guard: every screen except splash/login requires a real session
+    if (PUBLIC_SCREENS.indexOf(id) === -1 && !currentUser) {
+      toast('กรุณาเข้าสู่ระบบก่อนใช้งาน');
+      id = 'login';
+      opts = { replace: opts.replace };
+    }
+
+    if (id === 'provider-profile' && !opts.keepSelfProfile) restoreDemoProfile();
+
     if (!opts.replace) history_.push(id);
     else history_[history_.length - 1] = id;
     render(id);
@@ -191,12 +224,209 @@
     toast('Message sent');
   }
 
+  /* ---------------- auth: UI helpers ---------------- */
+  var authErrorEl = document.getElementById('authError');
+  var authSuccessEl = document.getElementById('authSuccess');
+
+  function hideAuthMessages() {
+    authErrorEl.style.display = 'none';
+    authSuccessEl.style.display = 'none';
+  }
+  function showAuthError(text) {
+    authSuccessEl.style.display = 'none';
+    authErrorEl.textContent = text;
+    authErrorEl.style.display = '';
+  }
+  function showAuthSuccess(text) {
+    authErrorEl.style.display = 'none';
+    authSuccessEl.textContent = text;
+    authSuccessEl.style.display = '';
+  }
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    var isSignup = mode === 'signup';
+    document.getElementById('authNameField').style.display = isSignup ? '' : 'none';
+    document.getElementById('authRoleField').style.display = isSignup ? '' : 'none';
+    document.getElementById('authSubmitBtn').textContent = isSignup ? 'สร้างบัญชี' : 'เข้าสู่ระบบ';
+    document.getElementById('authToggleText').textContent = isSignup ? 'มีบัญชีอยู่แล้ว?' : 'ยังไม่มีบัญชี?';
+    document.getElementById('authToggleLink').textContent = isSignup ? 'เข้าสู่ระบบ' : 'สร้างบัญชี';
+    hideAuthMessages();
+  }
+
+  // translate the handful of Supabase Auth errors users actually hit
+  function mapAuthError(error) {
+    var msg = (error && error.message) || '';
+    if (/Invalid login credentials/i.test(msg)) return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+    if (/User already registered/i.test(msg)) return 'อีเมลนี้ถูกใช้สมัครสมาชิกแล้ว';
+    if (/Password should be at least/i.test(msg)) return 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
+    if (/Unable to validate email address/i.test(msg)) return 'รูปแบบอีเมลไม่ถูกต้อง';
+    if (/Email not confirmed/i.test(msg)) return 'กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ';
+    return msg || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
+  }
+
+  /* ---------------- auth: profile ---------------- */
+  function loadProfile(userId) {
+    return sb.from('profiles').select('*').eq('id', userId).single().then(function (res) {
+      if (!res.error && res.data) { currentProfile = res.data; return res.data; }
+      // the profiles row is created by a DB trigger right after signUp —
+      // on a slow trigger there can be a brief race, so retry once.
+      return new Promise(function (resolve) { setTimeout(resolve, 800); }).then(function () {
+        return sb.from('profiles').select('*').eq('id', userId).single();
+      }).then(function (retry) {
+        currentProfile = (!retry.error && retry.data) ? retry.data : null;
+        return currentProfile;
+      });
+    });
+  }
+
+  function routeAfterAuth() {
+    var role = currentProfile && currentProfile.role;
+    go(role === 'provider' ? 'provider-request' : 'home', { replace: true });
+  }
+
+  function onSignedIn(user) {
+    currentUser = user;
+    return loadProfile(user.id).then(function () {
+      document.getElementById('authEmail').value = '';
+      document.getElementById('authPassword').value = '';
+      var nameField = document.getElementById('authFullName');
+      if (nameField) nameField.value = '';
+      history_ = [];
+      routeAfterAuth();
+    });
+  }
+
+  function handleAuthSubmit() {
+    if (!sb) { showAuthError('ยังไม่ได้ตั้งค่า Supabase (ดู env.example.js)'); return; }
+    hideAuthMessages();
+
+    var email = document.getElementById('authEmail').value.trim();
+    var password = document.getElementById('authPassword').value;
+    if (!email || !password) { showAuthError('กรุณากรอกอีเมลและรหัสผ่าน'); return; }
+
+    var btn = document.getElementById('authSubmitBtn');
+    btn.disabled = true;
+    // derive the resting label from authMode (not a captured snapshot) —
+    // a successful "confirmation required" signup switches mode back to
+    // login before this resolves, and the button must reflect that.
+    function restoreLabel() { return authMode === 'signup' ? 'สร้างบัญชี' : 'เข้าสู่ระบบ'; }
+
+    if (authMode === 'signup') {
+      var fullName = document.getElementById('authFullName').value.trim();
+      var roleChip = document.querySelector('#authRoleChips .chip.active');
+      var role = roleChip ? roleChip.dataset.role : 'customer';
+      if (!fullName) { showAuthError('กรุณากรอกชื่อ-นามสกุล'); btn.disabled = false; return; }
+
+      btn.textContent = 'กำลังสร้างบัญชี...';
+      sb.auth.signUp({
+        email: email,
+        password: password,
+        options: { data: { full_name: fullName, role: role } }
+      }).then(function (res) {
+        if (res.error) { showAuthError(mapAuthError(res.error)); return; }
+        if (res.data && res.data.session) {
+          return onSignedIn(res.data.user);
+        }
+        // email confirmation is required before a session exists
+        setAuthMode('login');
+        showAuthSuccess('สมัครสมาชิกสำเร็จ กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ');
+      }).catch(function () {
+        showAuthError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+      }).finally(function () {
+        btn.disabled = false;
+        btn.textContent = restoreLabel();
+      });
+    } else {
+      btn.textContent = 'กำลังเข้าสู่ระบบ...';
+      sb.auth.signInWithPassword({ email: email, password: password }).then(function (res) {
+        if (res.error) { showAuthError(mapAuthError(res.error)); return; }
+        return onSignedIn(res.data.user);
+      }).catch(function () {
+        showAuthError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+      }).finally(function () {
+        btn.disabled = false;
+        btn.textContent = restoreLabel();
+      });
+    }
+  }
+
+  function handleLogout() {
+    if (!sb) return;
+    sb.auth.signOut().then(function () {
+      currentUser = null;
+      currentProfile = null;
+      restoreDemoProfile();
+      hideAuthMessages();
+      setAuthMode('login');
+      history_ = ['splash'];
+      render('splash');
+      toast('ออกจากระบบแล้ว');
+    });
+  }
+
+  /* ---------------- self profile view (reuses the provider-profile screen) ---------------- */
+  var defaultProviderProfile = {
+    name: document.getElementById('profileHeroName').textContent,
+    tagline: document.getElementById('profileHeroTagline').textContent
+  };
+
+  function restoreDemoProfile() {
+    if (!viewingSelfProfile) return;
+    document.getElementById('profileHeroName').textContent = defaultProviderProfile.name;
+    document.getElementById('profileHeroTagline').textContent = defaultProviderProfile.tagline;
+    document.getElementById('profileMatchBtn').style.display = '';
+    document.getElementById('profileLogoutRow').style.display = 'none';
+    viewingSelfProfile = false;
+  }
+
+  function showOwnProfile() {
+    if (!currentUser) { go('login'); return; }
+    viewingSelfProfile = true;
+    var roleLabel = currentProfile && currentProfile.role === 'provider' ? 'ผู้ให้บริการ' : 'ลูกค้า';
+    document.getElementById('profileHeroName').textContent =
+      (currentProfile && currentProfile.full_name) || (currentUser.email || 'ผู้ใช้งาน');
+    document.getElementById('profileHeroTagline').textContent =
+      (currentUser.email || '') + ' · ' + roleLabel;
+    document.getElementById('profileMatchBtn').style.display = 'none';
+    document.getElementById('profileLogoutRow').style.display = '';
+    go('provider-profile', { keepSelfProfile: true });
+  }
+
+  /* ---------------- session bootstrap ---------------- */
+  function initAuth() {
+    if (!sb) { history_ = ['splash']; render('splash'); return; }
+
+    sb.auth.onAuthStateChange(function (event, session) {
+      if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        currentProfile = null;
+      }
+    });
+
+    sb.auth.getSession().then(function (res) {
+      var session = res.data && res.data.session;
+      if (session) {
+        currentUser = session.user;
+        return loadProfile(session.user.id).then(function () {
+          history_ = [];
+          routeAfterAuth();
+        });
+      }
+      history_ = ['splash'];
+      render('splash');
+    }).catch(function () {
+      history_ = ['splash'];
+      render('splash');
+    });
+  }
+
   /* ---------------- action handlers ---------------- */
   var actions = {
-    'login-submit': function () {
-      toast('ใครก็ได้ช่วยเดย์!');
-      setTimeout(function () { go('home', { replace: true }); history_ = ['home']; }, 550);
-    },
+    'auth-submit': function () { handleAuthSubmit(); },
+    'toggle-auth-mode': function () { setAuthMode(authMode === 'login' ? 'signup' : 'login'); },
+    'logout': function () { handleLogout(); },
+    'view-my-profile': function () { showOwnProfile(); },
     'open-flow': function () { openFlow(); },
     'close-flow': function () { closeFlow(); },
     'postjob-next': function () {
@@ -252,8 +482,9 @@
   initChips();
   initHomeSearch();
   initImageUpload();
-  render('splash');
+  setAuthMode('login');
+  initAuth();
 
-  /* QA hook (does not affect end-user behavior) */
+  /* QA hook (does not affect end-user behavior; still subject to the auth route guard) */
   window.__go = go;
 })();
