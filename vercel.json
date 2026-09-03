@@ -1,4 +1,8 @@
 {
+  "framework": null,
   "buildCommand": "npm run build",
-  "outputDirectory": "."
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/auth/callback", "destination": "/index.html" }
+  ]
 }

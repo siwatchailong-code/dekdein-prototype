@@ -34,6 +34,7 @@
   var currentProfile = null;  // row from public.profiles
   var authMode = 'login';     // 'login' | 'signup'
   var viewingSelfProfile = false;
+  var awaitingCallback = false; // true while /auth/callback is resolving an OAuth session
   var PUBLIC_SCREENS = ['splash', 'login'];
 
   /* ---------------- toast ---------------- */
@@ -254,6 +255,10 @@
     hideAuthMessages();
   }
 
+  var NOT_CONFIGURED_MSG =
+    'ยังไม่ได้ตั้งค่า Supabase — ตรวจสอบ env.js (local) หรือ Environment Variables ' +
+    'ใน Vercel (production) แล้ว deploy ใหม่';
+
   // translate the handful of Supabase Auth errors users actually hit
   function mapAuthError(error) {
     var msg = (error && error.message) || '';
@@ -298,7 +303,7 @@
   }
 
   function handleAuthSubmit() {
-    if (!sb) { showAuthError('ยังไม่ได้ตั้งค่า Supabase (ดู env.example.js)'); return; }
+    if (!sb) { showAuthError(NOT_CONFIGURED_MSG); return; }
     hideAuthMessages();
 
     var email = document.getElementById('authEmail').value.trim();
@@ -351,6 +356,29 @@
     }
   }
 
+  /* ---------------- auth: OAuth (Google / Facebook) ---------------- */
+  function handleOAuth(provider, btn) {
+    if (!sb) { showAuthError(NOT_CONFIGURED_MSG); return; }
+    hideAuthMessages();
+    if (btn) btn.disabled = true;
+
+    var redirectTo = window.location.origin + '/auth/callback';
+    sb.auth.signInWithOAuth({ provider: provider, options: { redirectTo: redirectTo } })
+      .then(function (res) {
+        if (res.error) {
+          showAuthError(mapAuthError(res.error));
+          if (btn) btn.disabled = false;
+          return;
+        }
+        // success: supabase-js immediately redirects the browser to the
+        // provider's consent screen — nothing else to do on this page.
+      })
+      .catch(function () {
+        showAuthError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+        if (btn) btn.disabled = false;
+      });
+  }
+
   function handleLogout() {
     if (!sb) return;
     sb.auth.signOut().then(function () {
@@ -394,15 +422,92 @@
   }
 
   /* ---------------- session bootstrap ---------------- */
+
+  // Strip ?code=..., ?error=..., etc. from the address bar once we're done
+  // with them, and drop back to the site root (leaves /auth/callback for
+  // the next OAuth round-trip).
+  function cleanCallbackUrl() {
+    try { window.history.replaceState({}, document.title, window.location.origin + '/'); }
+    catch (e) { /* ignore in older browsers / sandboxed contexts */ }
+  }
+
+  // Single, idempotent finish line for an OAuth sign-in — reached either
+  // from the getSession() check right after load, or from the SIGNED_IN
+  // event fired once supabase-js finishes exchanging the ?code= for a
+  // session in the background (PKCE flow, default detectSessionInUrl:true).
+  function finishOAuthCallback(session) {
+    if (!awaitingCallback) return;
+    awaitingCallback = false;
+    cleanCallbackUrl();
+    currentUser = session.user;
+    loadProfile(session.user.id).then(function () {
+      history_ = [];
+      routeAfterAuth();
+    });
+  }
+
   function initAuth() {
-    if (!sb) { history_ = ['splash']; render('splash'); return; }
+    if (!sb) {
+      // surface this immediately on the login screen (not just after a
+      // click) so a missing/misconfigured env.js is obvious right away
+      // instead of looking like "the login button does nothing".
+      showAuthError(NOT_CONFIGURED_MSG);
+      history_ = ['splash'];
+      render('splash');
+      return;
+    }
 
     sb.auth.onAuthStateChange(function (event, session) {
       if (event === 'SIGNED_OUT') {
         currentUser = null;
         currentProfile = null;
       }
+      if (event === 'SIGNED_IN' && session) {
+        finishOAuthCallback(session);
+      }
     });
+
+    var params = new URLSearchParams(window.location.search);
+    var oauthError = params.get('error_description') || params.get('error');
+    var onCallbackPath = /\/auth\/callback\/?$/.test(window.location.pathname);
+
+    // the provider (or Supabase) sent the user back with an error —
+    // e.g. they cancelled the consent screen, or the provider isn't
+    // configured correctly on the Supabase side.
+    if (oauthError) {
+      cleanCallbackUrl();
+      history_ = ['splash'];
+      render('splash');
+      go('login');
+      showAuthError(decodeURIComponent(oauthError.replace(/\+/g, ' ')));
+      return;
+    }
+
+    if (onCallbackPath) {
+      history_ = ['splash'];
+      render('splash');
+      awaitingCallback = true;
+
+      // supabase-js auto-exchanges the ?code=... for a session in the
+      // background; check immediately in case it already finished...
+      sb.auth.getSession().then(function (res) {
+        var session = res.data && res.data.session;
+        if (session) finishOAuthCallback(session);
+      });
+
+      // ...and fall back to a clear error if nothing arrives (bad/expired
+      // code, misconfigured redirect URL, network issue, etc).
+      setTimeout(function () {
+        if (!awaitingCallback) return;
+        awaitingCallback = false;
+        cleanCallbackUrl();
+        history_ = ['splash'];
+        render('splash');
+        go('login');
+        showAuthError('เข้าสู่ระบบไม่สำเร็จ (หมดเวลารอ) กรุณาลองใหม่อีกครั้ง');
+      }, 8000);
+      return;
+    }
 
     sb.auth.getSession().then(function (res) {
       var session = res.data && res.data.session;
@@ -425,6 +530,8 @@
   var actions = {
     'auth-submit': function () { handleAuthSubmit(); },
     'toggle-auth-mode': function () { setAuthMode(authMode === 'login' ? 'signup' : 'login'); },
+    'oauth-google': function (el) { handleOAuth('google', el); },
+    'oauth-facebook': function (el) { handleOAuth('facebook', el); },
     'logout': function () { handleLogout(); },
     'view-my-profile': function () { showOwnProfile(); },
     'open-flow': function () { openFlow(); },

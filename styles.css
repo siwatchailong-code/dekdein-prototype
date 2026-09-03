@@ -253,3 +253,6 @@ a{text-decoration:none;color:inherit}
 .field-msg{font-size:12px;line-height:1.55;margin:10px 0;padding:11px 13px;border-radius:14px}
 .field-msg.error{background:#fff1f0;color:#e0393e;border:1px solid #ffd3d1}
 .field-msg.success{background:#eefaf1;color:#18a05e;border:1px solid #cdeedd}
+
+/* Facebook brand mark on the existing social button — button itself (bg/size/radius/spacing) is untouched */
+.fb-icon{color:#1877f2;font-weight:800}

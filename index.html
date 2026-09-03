@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>dekdein. — Marketplace Prototype</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="/styles.css">
 </head>
 <!--
   Supabase config: env.js is generated at build time from environment
@@ -48,8 +48,8 @@
         <button class="primary" id="authSubmitBtn" data-action="auth-submit">เข้าสู่ระบบ</button>
         <div class="row between" style="margin:16px 0"><span class="small">หรือเข้าสู่ระบบด้วย</span><span class="small orange" data-toast="รีเซ็ตรหัสผ่าน (ยังไม่เปิดใช้งานใน prototype)">ลืมรหัสผ่าน?</span></div>
         <div class="social">
-          <button data-toast="เข้าสู่ระบบด้วย Google (prototype)">G</button>
-          <button data-toast="เข้าสู่ระบบด้วย Facebook (prototype)"></button>
+          <button data-action="oauth-google" aria-label="เข้าสู่ระบบด้วย Google">G</button>
+          <button data-action="oauth-facebook" aria-label="เข้าสู่ระบบด้วย Facebook"><span class="fb-icon">f</span></button>
           <button data-toast="เข้าสู่ระบบด้วยอีเมล (prototype)">✉</button>
         </div>
         <p class="small" style="text-align:center;margin-top:20px" id="authToggleRow"><span id="authToggleText">ยังไม่มีบัญชี?</span> <b class="orange" id="authToggleLink" data-action="toggle-auth-mode">สร้างบัญชี</b></p>
@@ -327,7 +327,7 @@
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="env.js"></script>
-<script src="app.js"></script>
+<script src="/env.js"></script>
+<script src="/app.js"></script>
 </body>
 </html>
