@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>dekdein. — Marketplace Prototype</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-root">
+  <div class="device" id="device">
+
+    <!-- 1) SPLASH -->
+    <section class="screen-page no-nav" data-screen="splash">
+      <div class="splash">
+        <div class="mark"><span class="svg-ico">⌁</span></div>
+        <h2>dekdein<i style="color:var(--orange);font-style:normal">.</i></h2>
+        <p>หาคนเก่ง ๆ มาช่วยให้งานของคุณเสร็จ</p>
+        <button class="primary" data-go="login">เริ่มใช้งาน ›</button>
+      </div>
+    </section>
+
+    <!-- 2) LOGIN -->
+    <section class="screen-page no-nav" data-screen="login">
+      <div class="login">
+        <div class="orb"><span class="svg-ico">⌁</span></div>
+        <div class="logo-big">dekdein<i>.</i></div>
+        <div class="title">ยินดีต้อนรับกลับ</div>
+        <p class="muted">เข้าสู่ระบบเพื่อจ้างงาน รับงาน แชท และจัดการทุกอย่างในที่เดียว</p>
+        <div class="field"><label>อีเมล</label><input type="email" placeholder="คุณ@example.com"></div>
+        <div class="field"><label>รหัสผ่าน</label><input type="password" placeholder="••••••••"></div>
+        <button class="primary" data-action="login-submit">เข้าสู่ระบบ</button>
+        <div class="row between" style="margin:16px 0"><span class="small">หรือเข้าสู่ระบบด้วย</span><span class="small orange" data-toast="รีเซ็ตรหัสผ่าน (ยังไม่เปิดใช้งานใน prototype)">ลืมรหัสผ่าน?</span></div>
+        <div class="social">
+          <button data-toast="เข้าสู่ระบบด้วย Google (prototype)">G</button>
+          <button data-toast="เข้าสู่ระบบด้วย Facebook (prototype)"></button>
+          <button data-toast="เข้าสู่ระบบด้วยอีเมล (prototype)">✉</button>
+        </div>
+        <p class="small" style="text-align:center;margin-top:20px">ยังไม่มีบัญชี? <b class="orange" data-toast="สมัครสมาชิก (ยังไม่เปิดใช้งานใน prototype)">สร้างบัญชี</b></p>
+      </div>
+    </section>
+
+    <!-- 3) HOME -->
+    <section class="screen-page" data-screen="home" data-nav="home">
+      <div class="top">
+        <div class="brand">dekdein<i>.</i></div>
+        <div class="row gap8">
+          <button class="icon" data-toast="การแจ้งเตือน"><span class="svg-ico">◌</span></button>
+          <button class="icon" data-action="toggle-provider-mode"><span class="svg-ico">◉</span></button>
+        </div>
+      </div>
+      <div class="search"><span class="svg-ico">⌕</span><input type="text" id="homeSearch" placeholder="ค้นหาบริการ ทักษะ หรือผู้ให้บริการ"></div>
+      <div class="hscroll chips" data-chipgroup="home">
+        <span class="chip active">สำหรับคุณ</span><span class="chip">บริการหน้าหลัก</span><span class="chip">ย้ายของ</span><span class="chip">ซ่อมแซม</span><span class="chip">ออกแบบ</span>
+      </div>
+      <div class="hero reveal">
+        <h2>ต้องการคนช่วยอะไร?<br>วันนี้?</h2>
+        <p>บอกเราว่าคุณต้องการความช่วยเหลือเรื่องอะไร แล้วเราจะช่วยหาคนที่เหมาะกับงานให้</p>
+        <button data-action="open-flow">โพสต์งาน</button>
+        <div class="float-emoji"><span class="svg-ico">+</span></div>
+      </div>
+      <div class="section-title">เลือกดูบริการ</div>
+      <div class="hscroll">
+        <div class="service" data-go="match"><div class="svc-icon"><span class="svg-ico">⌂</span></div><b>ทำความสะอาด</b></div>
+        <div class="service" data-go="match"><div class="svc-icon"><span class="svg-ico">⌁</span></div><b>ซ่อมแซม</b></div>
+        <div class="service" data-go="match"><div class="svc-icon"><span class="svg-ico">↗</span></div><b>ย้ายของ</b></div>
+        <div class="service" data-go="match"><div class="svc-icon"><span class="svg-ico">✦</span></div><b>ออกแบบ</b></div>
+        <div class="service" data-go="match"><div class="svc-icon"><span class="svg-ico">□</span></div><b>ขนส่ง</b></div>
+      </div>
+      <div class="section-title">บริการยอดนิยม <span class="see-all" data-go="match">ดูทั้งหมด</span></div>
+      <div class="list" id="homeJobList">
+        <div class="card job" data-go="provider-profile"><div class="thumb"></div><div><b>บริการทำความสะอาดใหญ่</b><p>พร้อมรับงานวันนี้ · 4.9 ★</p></div><span class="price">฿600</span></div>
+        <div class="card job" data-go="provider-profile"><div class="thumb t2"></div><div><b>ย้ายของในห้องเล็ก</b><p>ตอบไว · 4.8 ★</p></div><span class="price">฿800</span></div>
+      </div>
+    </section>
+
+    <!-- 4) POST JOB -->
+    <section class="screen-page no-nav" data-screen="post-job">
+      <div class="top"><button class="icon" data-back>‹</button><b>โพสต์งาน</b><button class="icon" data-go="home">×</button></div>
+      <div class="stepper"><i class="active"></i><i></i><i></i><i></i></div>
+      <div class="title">คุณต้องการความช่วยเหลืออะไร?</div>
+      <p class="small">เขียนสั้น ๆ ก่อน แล้วเพิ่มรายละเอียดในขั้นตอนถัดไป</p>
+      <div class="field"><label>ชื่องาน</label><input type="text" value="ช่วยฉันย้ายเฟอร์นิเจอร์"></div>
+      <div class="field"><label>หมวดหมู่</label><input type="text" value="ย้ายของและขนส่ง"></div>
+      <div class="section-title">เพิ่มรูปภาพ <span class="small">ไม่บังคับ</span></div>
+      <div class="gallery" id="postJobGallery">
+        <div class="pic"></div>
+        <div class="pic"></div>
+        <div class="pic" id="picUploadTrigger" data-action="upload-image">＋</div>
+      </div>
+      <input type="file" accept="image/*" class="upload-input" id="picUploadInput">
+      <div style="height:190px"></div>
+      <button class="primary" data-action="postjob-next">ถัดไป</button>
+    </section>
+
+    <!-- 5) LOCATION -->
+    <section class="screen-page no-nav" data-screen="location">
+      <div class="top"><button class="icon" data-back>‹</button><b>สถานที่ทำงาน</b><span></span></div>
+      <div class="search"><span class="svg-ico">⌖</span><input type="text" placeholder="ค้นหาสถานที่"></div>
+      <div class="map"><div class="pin p1"></div><div class="pin p2"></div></div>
+      <div class="section-title">จุดรับของ</div>
+      <div class="field"><label>สถานที่ที่เลือก</label><strong>มหาวิทยาลัยอุบลราชธานี</strong><div class="small" style="margin-top:4px">เพิ่มชื่ออาคาร ชั้น หรือจุดนัดพบ</div></div>
+      <div class="field"><label>รายละเอียดเพิ่มเติม</label><strong class="muted">หอ A · ห้อง 204</strong></div>
+      <button class="primary" data-action="location-confirm">ยืนยันสถานที่</button>
+      <div class="section-title">ทางลัด</div>
+      <div class="card row gap12" data-toast="เลือกจากแผนที่ (ยังไม่เปิดใช้งานใน prototype)"><span style="font-size:23px">🗺</span><b>เลือกจากแผนที่</b><span style="margin-left:auto">›</span></div>
+      <div class="card row gap12" style="margin-top:8px" data-toast="ใช้ตำแหน่งปัจจุบัน (ยังไม่เปิดใช้งานใน prototype)"><span style="font-size:23px">◎</span><b>ใช้ตำแหน่งปัจจุบัน</b><span style="margin-left:auto">›</span></div>
+    </section>
+
+    <!-- 6) MATCH / SEARCH PROVIDERS -->
+    <section class="screen-page no-nav" data-screen="match">
+      <div class="top"><button class="icon" data-back>‹</button><b>ค้นหาคนรับงาน</b><button class="icon" data-toast="ค้นหา"><span class="svg-ico">⌕</span></button></div>
+      <p class="small">คนที่พร้อมรับงานของคุณ</p>
+      <div class="match-card card">
+        <div class="row gap10" data-go="provider-profile">
+          <div class="avatar"></div>
+          <div><b>เบน</b><div class="small">ย้ายของ · ขนส่ง · ซ่อมแซม</div><div class="rating">★ 4.93 <span class="muted">(127 รีวิว)</span></div></div>
+          <span class="status" style="margin-left:auto">● ออนไลน์</span>
+        </div>
+        <div class="row between" style="margin-top:10px"><span class="small">เริ่มต้น <b class="orange">฿800</b></span><button class="secondary" data-action="match-provider" data-name="เบน">แมตช์</button></div>
+      </div>
+      <div class="match-card card">
+        <div class="row gap10" data-go="provider-profile">
+          <div class="avatar a2"></div>
+          <div><b>บอย</b><div class="small">บริการหน้าหลัก · ย้ายของ</div><div class="rating">★ 4.91 <span class="muted">(84 รีวิว)</span></div></div>
+          <span class="status" style="margin-left:auto">● ออนไลน์</span>
+        </div>
+        <div class="row between" style="margin-top:10px"><span class="small">เริ่มต้น <b class="orange">฿850</b></span><button class="secondary" data-action="match-provider" data-name="บอย">แมตช์</button></div>
+      </div>
+      <div class="match-card card">
+        <div class="row gap10" data-go="provider-profile">
+          <div class="avatar a3"></div>
+          <div><b>ตี๋</b><div class="small">ช่างไฟ · ซ่อมแซม</div><div class="rating">★ 4.89 <span class="muted">(63 รีวิว)</span></div></div>
+          <span class="status" style="margin-left:auto">● ออนไลน์</span>
+        </div>
+        <div class="row between" style="margin-top:10px"><span class="small">เริ่มต้น <b class="orange">฿900</b></span><button class="secondary" data-action="match-provider" data-name="ตี๋">แมตช์</button></div>
+      </div>
+    </section>
+
+    <!-- 7) PROVIDER PROFILE -->
+    <section class="screen-page no-nav" data-screen="provider-profile">
+      <div class="top"><button class="icon" data-back>‹</button><b>โปรไฟล์</b><button class="icon" data-toast="แชร์โปรไฟล์"><span class="svg-ico">↗</span></button></div>
+      <div class="profile-hero">
+        <div class="row gap12">
+          <div class="avatar lg"></div>
+          <div>
+            <div class="row gap8"><b style="font-size:20px">เบน</b><span class="status">● ออนไลน์</span></div>
+            <div class="small" style="color:#d8dce1;margin-top:3px">ย้ายของ · ขนส่ง · ซ่อมแซม</div>
+            <div class="rating" style="margin-top:6px">★ 4.93 <span style="color:#d8dce1">(127 รีวิว)</span></div>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat"><b>127</b><span>งานที่เสร็จแล้ว</span></div>
+          <div class="stat"><b>4.93</b><span>คะแนนรีวิว</span></div>
+          <div class="stat"><b>98%</b><span>ตรงเวลา</span></div>
+        </div>
+      </div>
+      <button class="primary" style="margin-top:12px" data-action="match-provider" data-name="เบน">แมตช์กับ เบน</button>
+      <div class="section-title">ทักษะ</div>
+      <div class="chips" data-chipgroup="skills"><span class="chip active">ย้ายของ</span><span class="chip">เฟอร์นิเจอร์</span><span class="chip">ขนส่ง</span><span class="chip">ซ่อมแซม</span></div>
+      <div class="section-title">ผลงานล่าสุด</div>
+      <div class="gallery"><div class="pic"></div><div class="pic"></div><div class="pic"></div></div>
+      <div class="section-title">รีวิว <span class="rating">★ 4.93</span></div>
+      <div class="card"><b>“ทำงานเร็ว สุภาพ และรอบคอบ”</b><p class="small">งานย้ายของเสร็จแล้ว · 2 สัปดาห์ก่อน</p></div>
+    </section>
+
+    <!-- 8) CHAT -->
+    <section class="screen-page" data-screen="chat" data-nav="chat" style="padding-bottom:142px">
+      <div class="chat-head">
+        <div class="row gap10">
+          <button class="icon" data-back>‹</button>
+          <div class="avatar"></div>
+          <div><b>เบน</b><div class="status">● ออนไลน์</div></div>
+          <span style="margin-left:auto;font-size:19px" data-toast="โทรออก"><span class="svg-ico">☎</span></span>
+          <span style="font-size:19px" data-toast="ตัวเลือกเพิ่มเติม"><span class="svg-ico">⋮</span></span>
+        </div>
+      </div>
+      <div class="messages" id="chatMessages">
+        <div class="system">วันนี้</div>
+        <div class="bubble">สวัสดีครับ เห็นคำขอย้ายของแล้ว มีของกี่ชิ้นครับ?<div class="time">10:28</div></div>
+        <div class="bubble me">ส่วนใหญ่เป็นกล่องกับโต๊ะครับ ไปแค่เที่ยวเดียว<div class="time">10:30</div></div>
+        <div class="bubble">ได้ครับ ผมทำให้ช่วงบ่ายนี้ได้<div class="time">10:31</div></div>
+        <div class="offer" id="chatOffer">
+          <div class="small">เสนอราคา</div><b>฿800</b>
+          <p class="small">รวมช่วยยกของและขนส่ง 1 เที่ยวระยะใกล้</p>
+          <button class="primary" style="height:40px" data-action="accept-offer">รับราคา</button>
+        </div>
+        <div class="bubble me">ได้เลย เจอกัน 17:00 น. 👌<div class="time">10:32 ✓✓</div></div>
+      </div>
+    </section>
+    <div class="chatbar" id="chatBar" style="display:none">
+      <button class="round" data-toast="แนบไฟล์">＋</button>
+      <input id="chatInput" placeholder="Message…">
+      <button class="round" data-toast="ข้อความเสียง">🎤</button>
+      <button class="round send" data-action="chat-send">➤</button>
+    </div>
+
+    <!-- 9) MY JOBS -->
+    <section class="screen-page" data-screen="my-jobs" data-nav="jobs">
+      <div class="top"><div class="brand">dekdein<i>.</i></div><button class="icon" data-go="challenge">⋯</button></div>
+      <div class="title">งานของฉัน</div>
+      <div class="chips" data-chipgroup="myjobs">
+        <span class="chip active" data-filter="active">กำลังดำเนินการ 2</span>
+        <span class="chip" data-filter="done">จบงานd 12</span>
+        <span class="chip" data-filter="cancelled">ยกเลิก</span>
+      </div>
+      <div id="myJobsActive">
+        <div class="card" style="margin-top:8px" data-go="chat">
+          <div class="row between"><span class="tag">กำลังดำเนินการ</span><span class="small">วันนี้ · 17:00</span></div>
+          <div class="job" style="margin-top:11px"><div class="thumb"></div><div><b>ย้ายเฟอร์นิเจอร์</b><p>เบน · แมตช์ed</p></div><span class="price">฿800</span></div>
+          <div class="bar"><i style="width:48%"></i></div>
+          <div class="small" style="margin-top:6px">รอผู้ให้บริการเริ่มงาน</div>
+        </div>
+        <div class="card" style="margin-top:10px" data-go="match">
+          <div class="row between"><span class="tag">กำลังค้นหา</span><span class="small">3 นาทีที่แล้ว</span></div>
+          <div class="job" style="margin-top:11px"><div class="thumb t3"></div><div><b>ติดตั้งชั้นวางผนัง</b><p>กำลังค้นหาผู้ให้บริการ</p></div><span class="price">งบประมาณ</span></div>
+        </div>
+      </div>
+      <div id="myJobsDone" style="display:none">
+        <div class="section-title">เพิ่งจบงาน</div>
+        <div class="card job" data-go="provider-profile"><div class="thumb t2"></div><div><b>ล้างแอร์</b><p>จบงานd · ★ 5.0</p></div><span class="price">฿600</span></div>
+      </div>
+      <div id="myJobsCancelled" style="display:none">
+        <p class="small" style="text-align:center;margin-top:24px">ยังไม่มีงานที่ยกเลิก</p>
+      </div>
+    </section>
+
+    <!-- 10) RANKING -->
+    <section class="screen-page" data-screen="ranking" data-nav="ranking">
+      <div class="top"><button class="icon" data-back>‹</button><b>อันดับผู้ให้บริการ</b><button class="icon" data-toast="ค้นหา"><span class="svg-ico">⌕</span></button></div>
+      <div class="chips" data-chipgroup="ranking"><span class="chip active">ทั้งหมด</span><span class="chip">ย้ายของ</span><span class="chip">ซ่อมแซม</span><span class="chip">ทำความสะอาด</span></div>
+      <div class="section-title">อันดับเดือนนี้</div>
+      <div class="hscroll">
+        <div class="card person-card" data-go="provider-profile"><div class="row gap10"><span style="font-size:23px">🥇</span><div class="avatar"></div><div><b>เบน</b><div class="rating">★ 4.93</div></div></div><div class="small" style="margin-top:10px">127 งานที่เสร็จแล้ว</div></div>
+        <div class="card person-card" data-go="provider-profile"><div class="row gap10"><span style="font-size:23px">🥈</span><div class="avatar a2"></div><div><b>เมย์</b><div class="rating">★ 4.91</div></div></div><div class="small" style="margin-top:10px">114 งานที่เสร็จแล้ว</div></div>
+      </div>
+      <div class="section-title">อันดับทั้งหมด</div>
+      <div class="card">
+        <div class="rank" data-go="provider-profile"><span class="num">1</span><div class="avatar"></div><div><b>เบน</b><div class="rating">★ 4.93</div></div><span class="small" style="margin-left:auto">127 งาน</span></div>
+        <div class="rank" data-go="provider-profile"><span class="num">2</span><div class="avatar a2"></div><div><b>เมย์</b><div class="rating">★ 4.91</div></div><span class="small" style="margin-left:auto">114 งาน</span></div>
+        <div class="rank" data-go="provider-profile"><span class="num">3</span><div class="avatar a3"></div><div><b>ตี๋</b><div class="rating">★ 4.89</div></div><span class="small" style="margin-left:auto">103 งาน</span></div>
+      </div>
+    </section>
+
+    <!-- 11) CHALLENGE -->
+    <section class="screen-page" data-screen="challenge" data-nav="ranking">
+      <div class="top"><button class="icon" data-back>‹</button><b>ความคืบหน้าของคุณ</b><button class="icon" data-toast="วิธีใช้งานภารกิจ">?</button></div>
+      <div class="profile-hero">
+        <div class="small" style="color:#d8dce1">สัปดาห์นี้</div>
+        <div class="title" style="margin:5px 0">ทำต่อเนื่องไปเรื่อย ๆ 🚀</div>
+        <p class="small" style="color:#d8dce1">การทำกิจกรรมเล็ก ๆ ช่วยให้โปรไฟล์ดูน่าเชื่อถือ</p>
+        <div class="bar" style="background:rgba(255,255,255,.2)"><i style="width:68%"></i></div>
+      </div>
+      <div class="section-title">ภารกิจ</div>
+      <div class="list">
+        <div class="card challenge"><div class="row between"><b>จบงาน 3 งาน</b><span class="orange">2/3</span></div><div class="bar"><i style="width:0%"></i></div><div class="small" style="margin-top:7px">รางวัล: เพิ่มความโดดเด่นให้โปรไฟล์</div></div>
+        <div class="card challenge"><div class="row between"><b>ตอบกลับภายใน 10 นาที</b><span class="orange">6/10</span></div><div class="bar"><i style="width:60%"></i></div><div class="small" style="margin-top:7px">ตอบรับคำขอใหม่อย่างสม่ำเสมอ</div></div>
+        <div class="card challenge"><div class="row between"><b>รับรีวิวเพิ่ม 2 รีวิว</b><span class="orange">1/2</span></div><div class="bar"><i style="width:50%"></i></div></div>
+      </div>
+    </section>
+
+    <!-- 12) PROVIDER — NEW JOB REQUEST -->
+    <section class="screen-page" data-screen="provider-request" data-nav="home">
+      <div class="top"><div class="brand" data-action="exit-provider-mode" style="cursor:pointer">dekdein<i>.</i></div><span class="status">● พร้อมรับงาน</span></div>
+      <div class="title">คำของานใหม่ใกล้คุณ</div>
+      <p class="small">ขั้นตอนง่าย: ดูงาน › รับงาน › แชท ไม่มีขั้นตอนเกินจำเป็น</p>
+      <div class="card" style="padding:17px">
+        <div class="row between"><span class="tag">คำขอใหม่</span><span class="small">2 นาทีที่แล้ว</span></div>
+        <div class="title" style="font-size:21px">ช่วยย้ายเฟอร์นิเจอร์</div>
+        <div class="row gap8 small">📍 มหาวิทยาลัยอุบลราชธานี <span>•</span> 🕒 วันนี้, 17:00</div>
+        <div class="map" style="height:120px;margin:14px 0"><div class="pin p1"></div><div class="pin p2"></div></div>
+        <div class="row between"><div><div class="small">งบประมาณของคุณ</div><b class="orange" style="font-size:23px">฿800</b></div><div class="small" style="text-align:right">รูปภาพ<br><b>แนบแล้ว 3 รูป</b></div></div>
+        <div class="row gap8" style="margin-top:14px">
+          <button class="secondary" style="flex:1;background:#f1f2f4;color:#656b74" data-action="skip-request">ข้าม</button>
+          <button class="primary" style="flex:1" data-action="accept-request">รับงาน</button>
+        </div>
+      </div>
+      <div class="section-title">ทำไมขั้นตอนนี้ถึงง่าย</div>
+      <div class="small">ข้อมูลสำคัญอยู่ในการ์ดเดียว กดรับงานแล้วเปิดแชทของงานนั้นทันที</div>
+    </section>
+
+    <!-- shared: bottom navs (one markup per data-nav variant, injected/shown by JS matching active screen) -->
+    <div class="nav" id="navBar">
+      <a data-go="home" data-navid="home"><b><span class="svg-ico">⌂</span></b>หน้าหลัก</a>
+      <a data-go="my-jobs" data-navid="jobs"><b><span class="svg-ico">▣</span></b>งาน</a>
+      <a data-go="chat" data-navid="chat"><b><span class="svg-ico">◌</span></b>แชท</a>
+      <a data-go="ranking" data-navid="ranking"><b><span class="svg-ico">☆</span></b>อันดับ</a>
+      <a data-go="provider-profile" data-navid="profile"><b><span class="svg-ico">♙</span></b>โปรไฟล์</a>
+    </div>
+
+    <!-- toast -->
+    <div class="toast" id="toast">เสร็จสิ้น</div>
+
+    <!-- bottom sheet: post-job flow chooser (matches Dekdein.html #flowModal) -->
+    <div id="flowModal" aria-hidden="true">
+      <div class="sheet">
+        <div class="handle"></div>
+        <h3 id="flowTitle">สร้างงาน</h3>
+        <p id="flowText">เลือกวิธีเริ่มต้น แล้วกรอกรายละเอียดงานในขั้นตอนถัดไป</p>
+        <div class="flow-options" id="flowOptions"></div>
+        <div class="flow-actions">
+          <button class="cancel-btn" data-action="close-flow">ยกเลิก</button>
+          <button class="primary" id="flowNext" disabled>ถัดไป</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
