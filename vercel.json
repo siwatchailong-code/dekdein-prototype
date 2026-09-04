@@ -1,6 +1,7 @@
 {
   "framework": null,
   "buildCommand": "npm run build",
+  "outputDirectory": ".",
   "rewrites": [
     {
       "source": "/auth/callback",
