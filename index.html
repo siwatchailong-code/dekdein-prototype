@@ -7,10 +7,10 @@
 <link rel="stylesheet" href="/styles.css">
 </head>
 <!--
-  Supabase config: env.js is generated at build time from environment
-  variables (see scripts/generate-env.js) and is NOT committed to git.
-  For local development, copy env.example.js to env.js and fill in your
-  own project's URL + anon key.
+  Supabase config: public/env.js is generated at build time from
+  environment variables (see build.js) and is NOT committed to git.
+  For local development, run `npm run build` with SUPABASE_URL and
+  SUPABASE_ANON_KEY set, then serve the public/ folder.
 -->
 <body>
 <div class="app-root">
@@ -38,13 +38,6 @@
         <div class="field" id="authNameField" style="display:none"><label>ชื่อ-นามสกุล</label><input type="text" id="authFullName" placeholder="ชื่อของคุณ"></div>
         <div class="field"><label>อีเมล</label><input type="email" id="authEmail" placeholder="คุณ@example.com"></div>
         <div class="field"><label>รหัสผ่าน</label><input type="password" id="authPassword" placeholder="••••••••"></div>
-        <div class="field" id="authRoleField" style="display:none">
-          <label>ประเภทผู้ใช้งาน</label>
-          <div class="chips" data-chipgroup="role" id="authRoleChips" style="padding:6px 0 0">
-            <span class="chip active" data-role="customer">ลูกค้า (ต้องการจ้างงาน)</span>
-            <span class="chip" data-role="provider">ผู้ให้บริการ (รับงาน)</span>
-          </div>
-        </div>
         <button class="primary" id="authSubmitBtn" data-action="auth-submit">เข้าสู่ระบบ</button>
         <div class="row between" style="margin:16px 0"><span class="small">หรือเข้าสู่ระบบด้วย</span><span class="small orange" data-toast="รีเซ็ตรหัสผ่าน (ยังไม่เปิดใช้งานใน prototype)">ลืมรหัสผ่าน?</span></div>
         <div class="social">

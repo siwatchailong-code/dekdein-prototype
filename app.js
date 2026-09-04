@@ -248,7 +248,6 @@
     authMode = mode;
     var isSignup = mode === 'signup';
     document.getElementById('authNameField').style.display = isSignup ? '' : 'none';
-    document.getElementById('authRoleField').style.display = isSignup ? '' : 'none';
     document.getElementById('authSubmitBtn').textContent = isSignup ? 'สร้างบัญชี' : 'เข้าสู่ระบบ';
     document.getElementById('authToggleText').textContent = isSignup ? 'มีบัญชีอยู่แล้ว?' : 'ยังไม่มีบัญชี?';
     document.getElementById('authToggleLink').textContent = isSignup ? 'เข้าสู่ระบบ' : 'สร้างบัญชี';
@@ -286,8 +285,11 @@
   }
 
   function routeAfterAuth() {
-    var role = currentProfile && currentProfile.role;
-    go(role === 'provider' ? 'provider-request' : 'home', { replace: true });
+    // Every account has customer capability (is_customer defaults true),
+    // and Home already carries the entry point into freelancer mode
+    // ("เปิดโหมดผู้ให้บริการ"), so there is no longer a separate role to
+    // branch the landing screen on — everyone lands on Home.
+    go('home', { replace: true });
   }
 
   function onSignedIn(user) {
@@ -319,15 +321,26 @@
 
     if (authMode === 'signup') {
       var fullName = document.getElementById('authFullName').value.trim();
-      var roleChip = document.querySelector('#authRoleChips .chip.active');
-      var role = roleChip ? roleChip.dataset.role : 'customer';
       if (!fullName) { showAuthError('กรุณากรอกชื่อ-นามสกุล'); btn.disabled = false; return; }
 
+      // Every new account starts as a customer only (is_customer=true,
+      // is_freelancer=false — set by the handle_new_user() DB trigger).
+      // 'role' is still sent for backward compatibility with the legacy
+      // role column/trigger logic, but the UI no longer lets the person
+      // pick it at signup — becoming a freelancer happens later, from the
+      // same account, via the existing "เปิดโหมดผู้ให้บริการ" action.
+      //
+      // The real production handle_new_user() trigger reads the person's
+      // name from metadata key 'name' (production public.profiles has a
+      // 'name' column, not 'full_name'). We send both 'name' and
+      // 'full_name' with the same value so this keeps working whichever
+      // trigger version is live during the migration, without guessing
+      // which one is actually deployed.
       btn.textContent = 'กำลังสร้างบัญชี...';
       sb.auth.signUp({
         email: email,
         password: password,
-        options: { data: { full_name: fullName, role: role } }
+        options: { data: { name: fullName, full_name: fullName, role: 'customer' } }
       }).then(function (res) {
         if (res.error) { showAuthError(mapAuthError(res.error)); return; }
         if (res.data && res.data.session) {
@@ -408,17 +421,90 @@
     viewingSelfProfile = false;
   }
 
+  // Label from the real dual-capability columns (is_customer/is_freelancer).
+  // Falls back to the legacy single 'role' column, and finally to customer,
+  // so this keeps working whether the row hasn't been migrated yet, has
+  // been migrated, or is missing entirely (defensive — schema.sql in this
+  // repo does not yet declare these columns; see README).
+  function roleLabelFor(profile) {
+    if (!profile) return 'ลูกค้า';
+    var hasCustomer = profile.is_customer !== undefined || profile.is_freelancer !== undefined
+      ? profile.is_customer !== false
+      : profile.role !== 'provider';
+    var hasFreelancer = profile.is_customer !== undefined || profile.is_freelancer !== undefined
+      ? !!profile.is_freelancer
+      : profile.role === 'provider';
+    if (hasCustomer && hasFreelancer) return 'ลูกค้า · ผู้ให้บริการ';
+    if (hasFreelancer) return 'ผู้ให้บริการ';
+    return 'ลูกค้า';
+  }
+
+  // Production public.profiles uses column 'name', not 'full_name' (the
+  // legacy column this repo's schema.sql/original code assumed). Prefer
+  // 'name' first, fall back to 'full_name' for any row still on the old
+  // shape, then the account email as a last resort. Do not drop the
+  // full_name fallback — some rows may still only have that populated.
+  function profileNameFor(profile) {
+    if (!profile) return currentUser && currentUser.email || 'ผู้ใช้งาน';
+    return profile.name || profile.full_name || (currentUser && currentUser.email) || 'ผู้ใช้งาน';
+  }
+
   function showOwnProfile() {
     if (!currentUser) { go('login'); return; }
     viewingSelfProfile = true;
-    var roleLabel = currentProfile && currentProfile.role === 'provider' ? 'ผู้ให้บริการ' : 'ลูกค้า';
-    document.getElementById('profileHeroName').textContent =
-      (currentProfile && currentProfile.full_name) || (currentUser.email || 'ผู้ใช้งาน');
+    var roleLabel = roleLabelFor(currentProfile);
+    document.getElementById('profileHeroName').textContent = profileNameFor(currentProfile);
     document.getElementById('profileHeroTagline').textContent =
       (currentUser.email || '') + ' · ' + roleLabel;
     document.getElementById('profileMatchBtn').style.display = 'none';
     document.getElementById('profileLogoutRow').style.display = '';
     go('provider-profile', { keepSelfProfile: true });
+  }
+
+  /* ---------------- freelancer capability (same account, dual role) ----------
+     Reuses the existing "◉ toggle-provider-mode" icon on Home and the
+     existing "exit-provider-mode" tap (brand logo on the provider-request
+     screen) — no new UI. What changed is that these now call the real
+     Supabase functions instead of just switching screens:
+       - entering provider mode  -> public.enable_availability()
+         (grants freelancer capability AND opens it for job requests,
+         per the function's own description: is_freelancer=true,
+         availability_status='available')
+       - exiting provider mode   -> public.disable_freelancer()
+         (pauses job requests: availability_status='unavailable';
+         freelancer capability itself is kept, matching how the DB
+         function is described — this is "stop for now", not "revoke")
+     Both are called as zero-argument RPCs (security definer, keyed off
+     auth.uid() on the server) per how they were described to me. If the
+     real functions take parameters, these two calls need updating. ------ */
+  function enterProviderMode(btn) {
+    if (!sb || !currentUser) { go('login'); return; }
+    if (btn) btn.disabled = true;
+    sb.rpc('enable_availability').then(function (res) {
+      if (res.error) {
+        toast('เปิดโหมดผู้ให้บริการไม่สำเร็จ: ' + (res.error.message || 'เกิดข้อผิดพลาด'));
+        return;
+      }
+      return loadProfile(currentUser.id);
+    }).then(function () {
+      go('provider-request');
+    }).catch(function () {
+      toast('เปิดโหมดผู้ให้บริการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+    }).finally(function () {
+      if (btn) btn.disabled = false;
+    });
+  }
+
+  function exitProviderMode() {
+    if (sb && currentUser) {
+      sb.rpc('disable_freelancer').then(function (res) {
+        if (res.error) toast('หยุดรับงานไม่สำเร็จ: ' + (res.error.message || 'เกิดข้อผิดพลาด'));
+        return loadProfile(currentUser.id);
+      }).catch(function () {
+        toast('หยุดรับงานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+      });
+    }
+    go('home');
   }
 
   /* ---------------- session bootstrap ---------------- */
@@ -561,8 +647,8 @@
       toast('รับงานสำเร็จ กำลังเปิดแชท');
       setTimeout(function () { go('chat'); }, 500);
     },
-    'toggle-provider-mode': function () { go('provider-request'); },
-    'exit-provider-mode': function () { go('home'); }
+    'toggle-provider-mode': function (el) { enterProviderMode(el); },
+    'exit-provider-mode': function () { exitProviderMode(); }
   };
 
   /* ---------------- global click delegation ---------------- */
