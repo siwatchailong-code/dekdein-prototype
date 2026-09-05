@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>dekdein. — Marketplace Prototype</title>
 <link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 </head>
 <!--
   Supabase config: public/env.js is generated at build time from
@@ -35,6 +37,17 @@
         <p class="muted">เข้าสู่ระบบเพื่อจ้างงาน รับงาน แชท และจัดการทุกอย่างในที่เดียว</p>
         <div class="field-msg error" id="authError" style="display:none"></div>
         <div class="field-msg success" id="authSuccess" style="display:none"></div>
+        <div id="signupRolePicker" class="signup-role-picker" style="display:none">
+          <p class="small" style="margin:0 0 8px">เลือกประเภทบัญชี</p>
+          <div class="signup-role-grid">
+            <button type="button" class="signup-role active" data-action="select-signup-role" data-role="customer"><b>👤 ลูกค้า</b><span>สมัครง่าย เริ่มค้นหาและจ้างงานได้ทันที</span></button>
+            <button type="button" class="signup-role" data-action="select-signup-role" data-role="rider"><b>🛠️ ฟรีแลนซ์</b><span>สร้างโปรไฟล์งาน แล้วเข้าสู่ขั้นตอนยืนยันก่อนเปิดรับงาน</span></button>
+          </div>
+          <div class="verification-note" id="freelancerVerificationNote" style="display:none">
+            <b>การยืนยันฟรีแลนซ์</b>
+            <span>หลังสมัคร ระบบจะให้กรอกข้อมูลและส่งเอกสารยืนยันในขั้นตอนถัดไป ก่อนเปิดรับงาน</span>
+          </div>
+        </div>
         <div class="field" id="authNameField" style="display:none"><label>ชื่อ-นามสกุล</label><input type="text" id="authFullName" placeholder="ชื่อของคุณ"></div>
         <div class="field"><label>อีเมล</label><input type="email" id="authEmail" placeholder="คุณ@example.com"></div>
         <div class="field"><label>รหัสผ่าน</label><input type="password" id="authPassword" placeholder="••••••••"></div>
@@ -47,6 +60,24 @@
         </div>
         <p class="small" style="text-align:center;margin-top:20px" id="authToggleRow"><span id="authToggleText">ยังไม่มีบัญชี?</span> <b class="orange" id="authToggleLink" data-action="toggle-auth-mode">สร้างบัญชี</b></p>
       </div>
+    </section>
+
+    <!-- FREELANCER VERIFICATION -->
+    <section class="screen-page no-nav" data-screen="freelancer-verify">
+      <div class="top"><button class="icon" data-back>‹</button><b>ยืนยันตัวตนฟรีแลนซ์</b><button class="icon" data-go="home">×</button></div>
+      <div class="verify-hero">
+        <div class="verify-icon">✓</div>
+        <div><b>เปิดรับงานอย่างปลอดภัย</b><p class="small">ฟรีแลนซ์ต้องยืนยันข้อมูลมากกว่าลูกค้าก่อนเปิดรับงาน</p></div>
+      </div>
+      <div class="verify-list">
+        <div class="verify-row" id="verifyPhoneRow"><div><b>ยืนยันเบอร์โทรศัพท์</b><span>ใช้สำหรับความปลอดภัยของบัญชี</span></div><em id="verifyPhoneStatus">กำลังตรวจสอบ</em></div>
+        <div class="verify-row" id="verifyIdentityRow"><div><b>ยืนยันตัวตน</b><span>ตรวจสอบข้อมูลก่อนอนุญาตให้เปิดรับงาน</span></div><em id="verifyIdentityStatus">กำลังตรวจสอบ</em></div>
+      </div>
+      <div class="verification-note" style="display:block;margin-top:14px">
+        <b>สถานะการตรวจสอบ</b><span id="verifyHelpText">ระบบจะอ้างอิงสถานะจากบัญชีของคุณโดยตรง</span>
+      </div>
+      <button class="primary" style="margin-top:18px" data-action="refresh-verification">ตรวจสอบสถานะอีกครั้ง</button>
+      <button class="secondary" style="width:100%;margin-top:10px" data-go="home">กลับหน้าหลัก</button>
     </section>
 
     <!-- 3) HOME -->
@@ -105,15 +136,15 @@
     <!-- 5) LOCATION -->
     <section class="screen-page no-nav" data-screen="location">
       <div class="top"><button class="icon" data-back>‹</button><b>สถานที่ทำงาน</b><span></span></div>
-      <div class="search"><span class="svg-ico">⌖</span><input type="text" placeholder="ค้นหาสถานที่"></div>
-      <div class="map"><div class="pin p1"></div><div class="pin p2"></div></div>
+      <div class="search"><span class="svg-ico">⌖</span><input type="text" id="locationSearchInput" placeholder="ค้นหาสถานที่"></div>
+      <div class="map" id="locationMap" aria-label="แผนที่ตำแหน่งงาน"><div class="map-label" id="locationMapLabel">กำลังรอตำแหน่ง</div><div class="pin p1"></div><div class="pin p2"></div></div>
       <div class="section-title">จุดรับของ</div>
-      <div class="field"><label>สถานที่ที่เลือก</label><strong>มหาวิทยาลัยอุบลราชธานี</strong><div class="small" style="margin-top:4px">เพิ่มชื่ออาคาร ชั้น หรือจุดนัดพบ</div></div>
-      <div class="field"><label>รายละเอียดเพิ่มเติม</label><strong class="muted">หอ A · ห้อง 204</strong></div>
+      <div class="field"><label>สถานที่ที่เลือก</label><strong id="selectedLocationName">ยังไม่ได้เลือกสถานที่</strong><div class="small" id="selectedLocationCoords" style="margin-top:4px">ค้นหาสถานที่ ใช้ตำแหน่งปัจจุบัน หรือเลือกจากแผนที่</div></div>
+      <div class="field"><label>รายละเอียดเพิ่มเติม</label><input type="text" id="locationDetailsInput" placeholder="เช่น หอ A · ห้อง 204"></div>
       <button class="primary" data-action="location-confirm">ยืนยันสถานที่</button>
       <div class="section-title">ทางลัด</div>
-      <div class="card row gap12" data-toast="เลือกจากแผนที่ (ยังไม่เปิดใช้งานใน prototype)"><span style="font-size:23px">🗺</span><b>เลือกจากแผนที่</b><span style="margin-left:auto">›</span></div>
-      <div class="card row gap12" style="margin-top:8px" data-toast="ใช้ตำแหน่งปัจจุบัน (ยังไม่เปิดใช้งานใน prototype)"><span style="font-size:23px">◎</span><b>ใช้ตำแหน่งปัจจุบัน</b><span style="margin-left:auto">›</span></div>
+      <div class="card row gap12" data-action="pick-on-map"><span style="font-size:23px">🗺</span><b>เลือกจากแผนที่</b><span style="margin-left:auto">›</span></div>
+      <div class="card row gap12" style="margin-top:8px" data-action="use-current-location"><span style="font-size:23px">◎</span><b>ใช้ตำแหน่งปัจจุบัน</b><span style="margin-left:auto">›</span></div>
     </section>
 
     <!-- 6) MATCH / SEARCH PROVIDERS -->
@@ -203,7 +234,7 @@
     <div class="chatbar" id="chatBar" style="display:none">
       <button class="round" data-toast="แนบไฟล์">＋</button>
       <input id="chatInput" placeholder="Message…">
-      <button class="round" data-toast="ข้อความเสียง">🎤</button>
+      <button class="round" data-action="propose-price" title="เสนอราคา">฿</button>
       <button class="round send" data-action="chat-send">➤</button>
     </div>
 
