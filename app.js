@@ -6,28 +6,41 @@
    README / delivery notes for exactly which parts are real vs. prototype.
    ========================================================================= */
 
-(function () {
-  'use strict';
-
-  var screens = Array.prototype.slice.call(document.querySelectorAll('.screen-page'));
-  var navBar = document.getElementById('navBar');
-  var chatBar = document.getElementById('chatBar');
-  var toastEl = document.getElementById('toast');
-  var history_ = ['splash'];
-  var current = 'splash';
-
-  /* ---------------- Supabase client ---------------- */
-  var ENV = window.__ENV__ || {};
-  var sb = null;
-  if (window.supabase && ENV.SUPABASE_URL && ENV.SUPABASE_ANON_KEY) {
-    sb = window.supabase.createClient(ENV.SUPABASE_URL, ENV.SUPABASE_ANON_KEY);
-  } else {
-    console.error(
-      'Missing Supabase config. Copy env.example.js to env.js and fill in ' +
-      'your project URL + anon key (local dev), or set SUPABASE_URL / ' +
-      'SUPABASE_ANON_KEY as environment variables in Vercel (production).'
-    );
+function enterProviderMode(btn) {
+  if (!sb || !currentUser) {
+    go('login');
+    return;
   }
+
+  if (btn) btn.disabled = true;
+
+  loadProfile(currentUser.id)
+    .then(function (profile) {
+      // ผ่านการอนุมัติแล้ว
+      if (profile && profile.identity_verified === true) {
+        return sb.rpc('enable_availability')
+          .then(function (res) {
+            if (res.error) throw res.error;
+            return loadProfile(currentUser.id);
+          })
+          .then(function () {
+            go('provider-request');
+          });
+      }
+
+      // ยังไม่ผ่าน → ไปหน้าสมัคร/ตรวจสอบสถานะ
+      go('freelancer-verify');
+    })
+    .catch(function (error) {
+      toast(
+        'ไม่สามารถเปิดโหมดผู้ให้บริการได้: ' +
+        ((error && error.message) || 'เกิดข้อผิดพลาด')
+      );
+    })
+    .finally(function () {
+      if (btn) btn.disabled = false;
+    });
+}
 
   /* ---------------- auth state ---------------- */
   var currentUser = null;     // supabase auth user object
