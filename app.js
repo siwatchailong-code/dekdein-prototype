@@ -997,3 +997,170 @@ function enterProviderMode(btn) {
   /* QA hook (does not affect end-user behavior; still subject to the auth route guard) */
   window.__go = go;
 })();
+async function loadFreelancerApplication() {
+  if (!sb || !currentUser) return;
+
+  const statusBox = document.getElementById(
+    'freelancerApplicationStatus'
+  );
+
+  const formBox = document.getElementById(
+    'freelancerApplicationForm'
+  );
+
+  if (!statusBox || !formBox) return;
+
+  const { data, error } = await sb
+    .from('freelancer_applications')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  // ยังไม่เคยสมัคร
+  if (!data) {
+    statusBox.innerHTML = '';
+    formBox.style.display = 'block';
+    return;
+  }
+
+  // รออนุมัติ
+  if (data.status === 'pending') {
+    statusBox.innerHTML = `
+      <div class="application-status pending">
+        <strong>⏳ ใบสมัครกำลังรอการตรวจสอบ</strong>
+        ตอนนี้คุณส่งข้อมูลเรียบร้อยแล้ว กรุณารอผู้ดูแลระบบอนุมัติ
+      </div>
+    `;
+
+    formBox.style.display = 'none';
+    return;
+  }
+
+  // อนุมัติแล้ว
+  if (data.status === 'approved') {
+    statusBox.innerHTML = `
+      <div class="application-status approved">
+        <strong>✓ คุณได้รับการอนุมัติแล้ว</strong>
+        ตอนนี้คุณสามารถเปิดโหมดผู้ให้บริการและรับงานได้
+      </div>
+    `;
+
+    formBox.style.display = 'none';
+    return;
+  }
+
+  // ไม่อนุมัติ
+  if (data.status === 'rejected') {
+    statusBox.innerHTML = `
+      <div class="application-status rejected">
+        <strong>✕ ใบสมัครยังไม่ได้รับการอนุมัติ</strong>
+        ${data.rejection_reason || 'กรุณาตรวจสอบข้อมูลและสมัครใหม่'}
+      </div>
+    `;
+
+    formBox.style.display = 'block';
+  }
+}
+
+
+async function submitFreelancerApplication() {
+  if (!sb || !currentUser) {
+    go('login');
+    return;
+  }
+
+  const serviceArea =
+    document.getElementById('freelancerServiceArea').value.trim();
+
+  const services =
+    document.getElementById('freelancerServices').value.trim();
+
+  const bio =
+    document.getElementById('freelancerBio').value.trim();
+
+  const startingPrice =
+    Number(
+      document.getElementById('freelancerStartingPrice').value
+    );
+
+  const portfolioNote =
+    document.getElementById('freelancerPortfolioNote').value.trim();
+
+  const identityDocumentPath =
+    document.getElementById(
+      'freelancerIdentityDocument'
+    ).value.trim();
+
+  if (
+    !serviceArea ||
+    !services ||
+    !bio ||
+    !startingPrice ||
+    startingPrice < 0 ||
+    !portfolioNote ||
+    !identityDocumentPath
+  ) {
+    toast('กรุณากรอกข้อมูลให้ครบ');
+    return;
+  }
+
+  const button = document.getElementById(
+    'submitFreelancerApplication'
+  );
+
+  const originalText = button.textContent;
+
+  button.disabled = true;
+  button.textContent = 'กำลังส่งใบสมัคร...';
+
+  try {
+
+    const { data, error } = await sb.rpc(
+      'submit_freelancer_application',
+      {
+        p_service_area: serviceArea,
+        p_services: services,
+        p_bio: bio,
+        p_starting_price: startingPrice,
+        p_portfolio_note: portfolioNote,
+        p_identity_document_path: identityDocumentPath
+      }
+    );
+
+    if (error) throw error;
+
+    console.log(
+      'Freelancer application submitted:',
+      data
+    );
+
+    toast('ส่งใบสมัครเรียบร้อยแล้ว');
+
+    await loadFreelancerApplication();
+
+  } catch (error) {
+
+    console.error(
+      'submit freelancer application error:',
+      error
+    );
+
+    toast(
+      error.message ||
+      'ไม่สามารถส่งใบสมัครได้'
+    );
+
+  } finally {
+
+    button.disabled = false;
+    button.textContent = originalText;
+
+  }
+}
