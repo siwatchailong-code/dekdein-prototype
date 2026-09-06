@@ -113,7 +113,110 @@
         <div class="card job" data-go="provider-profile"><div class="thumb t2"></div><div><b>ย้ายของในห้องเล็ก</b><p>ตอบไว · 4.8 ★</p></div><span class="price">฿800</span></div>
       </div>
     </section>
+<!-- FREELANCER VERIFY -->
+<section class="screen-page no-nav" data-screen="freelancer-verify">
+  
+  <div class="top">
+    <button class="icon" data-back>‹</button>
+    <b>สมัครเป็นผู้ให้บริการ</b>
+    <button class="icon" data-go="home">×</button>
+  </div>
 
+  <div class="page-content">
+
+    <div class="verify-hero">
+      <div class="verify-icon">✦</div>
+      <div>
+        <h2>เริ่มให้บริการกับเรา</h2>
+        <p>กรอกข้อมูลเพื่อส่งคำขอสมัครเป็นฟรีแลนซ์</p>
+      </div>
+    </div>
+
+    <div id="freelancerApplicationStatus"></div>
+
+    <div id="freelancerApplicationForm">
+
+      <label class="form-label">
+        พื้นที่ให้บริการ
+      </label>
+
+      <input
+        id="freelancerServiceArea"
+        type="text"
+        placeholder="เช่น ม.อุบล / วารินชำราบ"
+      >
+
+      <label class="form-label">
+        บริการที่รับ
+      </label>
+
+      <input
+        id="freelancerServices"
+        type="text"
+        placeholder="เช่น รับส่งของ, ทำความสะอาด, ออกแบบ"
+      >
+
+      <label class="form-label">
+        แนะนำตัว
+      </label>
+
+      <textarea
+        id="freelancerBio"
+        rows="4"
+        placeholder="บอกลูกค้าว่าคุณทำอะไรได้บ้าง..."
+      ></textarea>
+
+      <label class="form-label">
+        ราคาเริ่มต้น
+      </label>
+
+      <div class="price-input">
+        <span>฿</span>
+        <input
+          id="freelancerStartingPrice"
+          type="number"
+          min="0"
+          placeholder="เช่น 100"
+        >
+      </div>
+
+      <label class="form-label">
+        ผลงาน / ประสบการณ์
+      </label>
+
+      <textarea
+        id="freelancerPortfolioNote"
+        rows="3"
+        placeholder="เช่น เคยทำงานด้านนี้มา 2 ปี..."
+      ></textarea>
+
+      <label class="form-label">
+        เอกสารยืนยันตัวตน
+      </label>
+
+      <input
+        id="freelancerIdentityDocument"
+        type="text"
+        placeholder="ใส่ลิงก์เอกสารก่อน (อัปโหลดจริงทำขั้นต่อไป)"
+      >
+
+      <p class="form-hint">
+        ข้อมูลของคุณจะถูกตรวจสอบก่อนเปิดใช้งานโหมดผู้ให้บริการ
+      </p>
+
+      <button
+        id="submitFreelancerApplication"
+        class="primary-btn"
+        type="button"
+      >
+        ส่งใบสมัคร
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
     <!-- 4) POST JOB -->
     <section class="screen-page no-nav" data-screen="post-job">
       <div class="top"><button class="icon" data-back>‹</button><b>โพสต์งาน</b><button class="icon" data-go="home">×</button></div>
