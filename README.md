@@ -63,7 +63,19 @@ Backed by the confirmed `matches` / `chat_messages` schema and RPCs
   identity_verified=true`) when signed in; tapping "แมตช์" calls
   `create_match_request`.
 - **Provider-request** shows the provider's oldest pending incoming
-  request; รับงาน/ข้าม call `accept_match`/`decline_match`.
+  request (query already scoped `provider_id = auth.uid()`, so two
+  freelancers can never see the same request — each match is created
+  against one specific provider by `create_match_request`), with the real
+  customer name (a second `profiles` read by `customer_id`), a real
+  relative-request time, and the real proposed/agreed price.
+  รับงาน/ข้าม call `accept_match`/`decline_match`, both button-guarded
+  against double-tap and re-querying the queue on failure in case the
+  request went stale between load and tap. Declining loads the next
+  pending request, if any; nothing is left to show once none remain.
+  **No job title/description, service area, distance, schedule time, or
+  photos are shown** — `matches` has no columns for any of that and no
+  `jobs` table exists (see "Still prototype" below); the card says so
+  instead of fabricating them, and points to the chat for those details.
   **My Jobs** lists the signed-in person's real matches (either side).
 - **Chat** is real (`chat_messages`, live via Supabase Realtime `postgres_changes`)
   once opened from a real match. Plain messages insert directly
@@ -88,9 +100,32 @@ challenges use static in-memory demo data.
 
 ## Current verification gate
 
-The app now exposes a dedicated freelancer verification screen and gates opening
-availability on the confirmed `profiles.phone_verified` and
-`profiles.identity_verified` flags. The browser only reads these flags; it does
-not mark a person verified. The server-side phone/identity document submission
-and approval workflow is not invented in this repo because its production RPC,
-RLS and Storage schema have not been exported/confirmed yet.
+The app exposes a dedicated freelancer application screen
+(`freelancer-verify`) and gates opening availability on the confirmed
+`profiles.identity_verified` flag (`phone_verified` is not checked — no
+phone OTP provider is live). The browser only reads `identity_verified`;
+it never sets it. That flag is set server-side by
+`approve_freelancer_application()` — see Admin below.
+
+## Admin — freelancer application review (`admin-applications`)
+
+An account with `profiles.role = 'admin'` (confirmed real enum label,
+confirmed real `is_admin(auth.uid())` function) is routed straight to this
+screen after sign-in, and a flag icon on Home (hidden for everyone else)
+also opens it. It lists every `pending` row in `public.freelancer_applications`
+— RLS already lets an admin see all rows, not just their own — with the
+applicant's real name, service area, services, bio, starting price,
+portfolio note, and identity-document link. อนุมัติ/ปฏิเสธ call
+`approve_freelancer_application(uuid)` / `reject_freelancer_application(uuid,
+text)` directly; both RPCs re-check `is_admin()` server-side themselves, so
+the client-side role check here is a UX convenience, not the real security
+boundary. **No schema change was needed for this screen** — it is built
+entirely on PHASE 3's existing table/RLS/RPCs.
+
+⚠️ PHASE 3 (`claude/phase3-freelancer-application.sql`) was verified correct
+in an isolated local sandbox only (see
+`claude/freelancer-application-form-fix.md`) — whether it has actually been
+run against production is still unconfirmed. Until it has, `submit
+/approve/reject_freelancer_application` will fail with a real Postgres
+"function does not exist" error, which this screen surfaces via toast
+rather than pretending to succeed.

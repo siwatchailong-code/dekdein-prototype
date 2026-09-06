@@ -62,22 +62,86 @@
       </div>
     </section>
 
-    <!-- FREELANCER VERIFICATION -->
+    <!-- FREELANCER VERIFY -->
     <section class="screen-page no-nav" data-screen="freelancer-verify">
-      <div class="top"><button class="icon" data-back>‹</button><b>ยืนยันตัวตนฟรีแลนซ์</b><button class="icon" data-go="home">×</button></div>
-      <div class="verify-hero">
-        <div class="verify-icon">✓</div>
-        <div><b>เปิดรับงานอย่างปลอดภัย</b><p class="small">ฟรีแลนซ์ต้องยืนยันข้อมูลมากกว่าลูกค้าก่อนเปิดรับงาน</p></div>
+
+      <div class="top">
+        <button class="icon" data-back>‹</button>
+        <b>สมัครเป็นผู้ให้บริการ</b>
+        <button class="icon" data-go="home">×</button>
       </div>
-      <div class="verify-list">
-        <div class="verify-row" id="verifyPhoneRow"><div><b>ยืนยันเบอร์โทรศัพท์</b><span>ใช้สำหรับความปลอดภัยของบัญชี</span></div><em id="verifyPhoneStatus">กำลังตรวจสอบ</em></div>
-        <div class="verify-row" id="verifyIdentityRow"><div><b>ยืนยันตัวตน</b><span>ตรวจสอบข้อมูลก่อนอนุญาตให้เปิดรับงาน</span></div><em id="verifyIdentityStatus">กำลังตรวจสอบ</em></div>
+
+      <div class="page-content">
+
+        <div class="verify-hero">
+          <div class="verify-icon">✦</div>
+          <div>
+            <h2>เริ่มให้บริการกับเรา</h2>
+            <p>กรอกข้อมูลเพื่อส่งคำขอสมัครเป็นฟรีแลนซ์</p>
+          </div>
+        </div>
+
+        <div id="freelancerApplicationStatus"></div>
+
+        <div id="freelancerApplicationForm">
+
+          <label class="form-label">พื้นที่ให้บริการ</label>
+          <input id="freelancerServiceArea" type="text" placeholder="เช่น ม.อุบล / วารินชำราบ">
+
+          <label class="form-label">บริการที่รับ</label>
+          <input id="freelancerServices" type="text" placeholder="เช่น รับส่งของ, ทำความสะอาด, ออกแบบ">
+
+          <label class="form-label">แนะนำตัว</label>
+          <textarea id="freelancerBio" rows="4" placeholder="บอกลูกค้าว่าคุณทำอะไรได้บ้าง..."></textarea>
+
+          <label class="form-label">ราคาเริ่มต้น</label>
+          <div class="price-input">
+            <span>฿</span>
+            <input id="freelancerStartingPrice" type="number" min="0" placeholder="เช่น 100">
+          </div>
+
+          <label class="form-label">ผลงาน / ประสบการณ์</label>
+          <textarea id="freelancerPortfolioNote" rows="3" placeholder="เช่น เคยทำงานด้านนี้มา 2 ปี..."></textarea>
+
+          <label class="form-label">เอกสารยืนยันตัวตน</label>
+          <input id="freelancerIdentityDocument" type="text" placeholder="ใส่ลิงก์เอกสารก่อน (อัปโหลดจริงทำขั้นต่อไป)">
+
+          <p class="form-hint">ข้อมูลของคุณจะถูกตรวจสอบก่อนเปิดใช้งานโหมดผู้ให้บริการ</p>
+
+          <button id="submitFreelancerApplication" class="primary-btn" type="button" data-action="submit-freelancer-application">ส่งใบสมัคร</button>
+
+        </div>
+
       </div>
-      <div class="verification-note" style="display:block;margin-top:14px">
-        <b>สถานะการตรวจสอบ</b><span id="verifyHelpText">ระบบจะอ้างอิงสถานะจากบัญชีของคุณโดยตรง</span>
+
+    </section>
+
+    <!-- ADMIN — freelancer application review (reuses PHASE 3's
+         freelancer_applications table/RLS/RPCs — no schema change) -->
+    <section class="screen-page no-nav" data-screen="admin-applications">
+
+      <div class="top">
+        <button class="icon" data-back>‹</button>
+        <b>ใบสมัครฟรีแลนซ์ (ผู้ดูแลระบบ)</b>
+        <button class="icon" data-go="home">×</button>
       </div>
-      <button class="primary" style="margin-top:18px" data-action="refresh-verification">ตรวจสอบสถานะอีกครั้ง</button>
-      <button class="secondary" style="width:100%;margin-top:10px" data-go="home">กลับหน้าหลัก</button>
+
+      <div class="page-content">
+
+        <div class="verify-hero">
+          <div class="verify-icon">✓</div>
+          <div>
+            <h2>ตรวจใบสมัคร</h2>
+            <p>อนุมัติหรือปฏิเสธใบสมัครที่รอตรวจสอบ</p>
+          </div>
+        </div>
+
+        <p class="small" id="adminApplicationsEmpty" style="text-align:center;margin-top:24px;display:none">ไม่มีใบสมัครที่รอตรวจสอบตอนนี้</p>
+
+        <div id="adminApplicationsList"></div>
+
+      </div>
+
     </section>
 
     <!-- 3) HOME -->
@@ -86,6 +150,7 @@
         <div class="brand">dekdein<i>.</i></div>
         <div class="row gap8">
           <button class="icon" data-toast="การแจ้งเตือน"><span class="svg-ico">◌</span></button>
+          <button class="icon" id="adminEntryBtn" data-go="admin-applications" hidden><span class="svg-ico">⚑</span></button>
           <button class="icon" data-action="toggle-provider-mode"><span class="svg-ico">◉</span></button>
         </div>
       </div>
@@ -113,110 +178,7 @@
         <div class="card job" data-go="provider-profile"><div class="thumb t2"></div><div><b>ย้ายของในห้องเล็ก</b><p>ตอบไว · 4.8 ★</p></div><span class="price">฿800</span></div>
       </div>
     </section>
-<!-- FREELANCER VERIFY -->
-<section class="screen-page no-nav" data-screen="freelancer-verify">
-  
-  <div class="top">
-    <button class="icon" data-back>‹</button>
-    <b>สมัครเป็นผู้ให้บริการ</b>
-    <button class="icon" data-go="home">×</button>
-  </div>
 
-  <div class="page-content">
-
-    <div class="verify-hero">
-      <div class="verify-icon">✦</div>
-      <div>
-        <h2>เริ่มให้บริการกับเรา</h2>
-        <p>กรอกข้อมูลเพื่อส่งคำขอสมัครเป็นฟรีแลนซ์</p>
-      </div>
-    </div>
-
-    <div id="freelancerApplicationStatus"></div>
-
-    <div id="freelancerApplicationForm">
-
-      <label class="form-label">
-        พื้นที่ให้บริการ
-      </label>
-
-      <input
-        id="freelancerServiceArea"
-        type="text"
-        placeholder="เช่น ม.อุบล / วารินชำราบ"
-      >
-
-      <label class="form-label">
-        บริการที่รับ
-      </label>
-
-      <input
-        id="freelancerServices"
-        type="text"
-        placeholder="เช่น รับส่งของ, ทำความสะอาด, ออกแบบ"
-      >
-
-      <label class="form-label">
-        แนะนำตัว
-      </label>
-
-      <textarea
-        id="freelancerBio"
-        rows="4"
-        placeholder="บอกลูกค้าว่าคุณทำอะไรได้บ้าง..."
-      ></textarea>
-
-      <label class="form-label">
-        ราคาเริ่มต้น
-      </label>
-
-      <div class="price-input">
-        <span>฿</span>
-        <input
-          id="freelancerStartingPrice"
-          type="number"
-          min="0"
-          placeholder="เช่น 100"
-        >
-      </div>
-
-      <label class="form-label">
-        ผลงาน / ประสบการณ์
-      </label>
-
-      <textarea
-        id="freelancerPortfolioNote"
-        rows="3"
-        placeholder="เช่น เคยทำงานด้านนี้มา 2 ปี..."
-      ></textarea>
-
-      <label class="form-label">
-        เอกสารยืนยันตัวตน
-      </label>
-
-      <input
-        id="freelancerIdentityDocument"
-        type="text"
-        placeholder="ใส่ลิงก์เอกสารก่อน (อัปโหลดจริงทำขั้นต่อไป)"
-      >
-
-      <p class="form-hint">
-        ข้อมูลของคุณจะถูกตรวจสอบก่อนเปิดใช้งานโหมดผู้ให้บริการ
-      </p>
-
-      <button
-        id="submitFreelancerApplication"
-        class="primary-btn"
-        type="button"
-      >
-        ส่งใบสมัคร
-      </button>
-
-    </div>
-
-  </div>
-
-</section>
     <!-- 4) POST JOB -->
     <section class="screen-page no-nav" data-screen="post-job">
       <div class="top"><button class="icon" data-back>‹</button><b>โพสต์งาน</b><button class="icon" data-go="home">×</button></div>
@@ -347,7 +309,7 @@
       <div class="title">งานของฉัน</div>
       <div class="chips" data-chipgroup="myjobs">
         <span class="chip active" data-filter="active">กำลังดำเนินการ 2</span>
-        <span class="chip" data-filter="done">จบงานd 12</span>
+        <span class="chip" data-filter="done">จบงาน 12</span>
         <span class="chip" data-filter="cancelled">ยกเลิก</span>
       </div>
       <div id="myJobsActive">
@@ -364,7 +326,7 @@
       </div>
       <div id="myJobsDone" style="display:none">
         <div class="section-title">เพิ่งจบงาน</div>
-        <div class="card job" data-go="provider-profile"><div class="thumb t2"></div><div><b>ล้างแอร์</b><p>จบงานd · ★ 5.0</p></div><span class="price">฿600</span></div>
+        <div class="card job" data-go="provider-profile"><div class="thumb t2"></div><div><b>ล้างแอร์</b><p>จบงาน · ★ 5.0</p></div><span class="price">฿600</span></div>
       </div>
       <div id="myJobsCancelled" style="display:none">
         <p class="small" style="text-align:center;margin-top:24px">ยังไม่มีงานที่ยกเลิก</p>
@@ -402,6 +364,70 @@
         <div class="card challenge"><div class="row between"><b>จบงาน 3 งาน</b><span class="orange">2/3</span></div><div class="bar"><i style="width:0%"></i></div><div class="small" style="margin-top:7px">รางวัล: เพิ่มความโดดเด่นให้โปรไฟล์</div></div>
         <div class="card challenge"><div class="row between"><b>ตอบกลับภายใน 10 นาที</b><span class="orange">6/10</span></div><div class="bar"><i style="width:60%"></i></div><div class="small" style="margin-top:7px">ตอบรับคำขอใหม่อย่างสม่ำเสมอ</div></div>
         <div class="card challenge"><div class="row between"><b>รับรีวิวเพิ่ม 2 รีวิว</b><span class="orange">1/2</span></div><div class="bar"><i style="width:50%"></i></div></div>
+      </div>
+    </section>
+
+    <!-- 11) FREELANCER HOME (provider dashboard — UI master plan screen 9) -->
+    <section class="screen-page" data-screen="freelancer-home" data-nav="home">
+      <div class="top">
+        <div class="brand">dekdein<i>.</i></div>
+        <button class="icon" data-toast="การแจ้งเตือน"><span class="svg-ico">◌</span></button>
+      </div>
+
+      <div class="profile-hero">
+        <div class="row gap12">
+          <div class="avatar lg" id="freelancerHomeAvatar"></div>
+          <div>
+            <b style="font-size:20px" id="freelancerHomeName">—</b>
+            <div class="small" style="color:#d8dce1;margin-top:3px" id="freelancerHomeArea">—</div>
+          </div>
+          <label class="switch" style="margin-left:auto">
+            <input type="checkbox" id="availabilityToggle" data-action="toggle-availability">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="small" style="color:#d8dce1;margin-top:12px" id="availabilityStatusText">กำลังตรวจสอบสถานะ...</div>
+        <div class="stats">
+          <div class="stat"><b id="statTotalJobs">–</b><span>งานทั้งหมด</span></div>
+          <div class="stat"><b id="statDoneJobs">–</b><span>สำเร็จแล้ว</span></div>
+          <div class="stat"><b id="statRating">–</b><span>คะแนนเฉลี่ย</span></div>
+        </div>
+      </div>
+
+      <div class="section-title">เมนู</div>
+      <div class="freelancer-menu">
+        <button type="button" class="menu-row" data-go="provider-request">
+          <span class="menu-ico">🔔</span>
+          <span class="menu-label">งานเข้าใหม่</span>
+          <em class="badge" id="menuNewRequestBadge" hidden>0</em>
+          <span class="menu-chevron">›</span>
+        </button>
+        <button type="button" class="menu-row" data-go="my-jobs">
+          <span class="menu-ico">▣</span>
+          <span class="menu-label">งานของฉัน</span>
+          <span class="menu-chevron">›</span>
+        </button>
+        <button type="button" class="menu-row" data-action="show-earnings">
+          <span class="menu-ico">฿</span>
+          <span class="menu-label">รายได้</span>
+          <em class="menu-value" id="menuEarningsValue"></em>
+          <span class="menu-chevron">›</span>
+        </button>
+        <button type="button" class="menu-row" data-toast="ระบบรีวิวยังไม่เปิดใช้งาน">
+          <span class="menu-ico">☆</span>
+          <span class="menu-label">รีวิวจากลูกค้า</span>
+          <span class="menu-chevron">›</span>
+        </button>
+        <button type="button" class="menu-row" data-action="view-my-profile">
+          <span class="menu-ico">♙</span>
+          <span class="menu-label">จัดการโปรไฟล์</span>
+          <span class="menu-chevron">›</span>
+        </button>
+        <button type="button" class="menu-row" data-toast="การตั้งค่ายังไม่เปิดใช้งาน">
+          <span class="menu-ico">⚙</span>
+          <span class="menu-label">การตั้งค่า</span>
+          <span class="menu-chevron">›</span>
+        </button>
       </div>
     </section>
 
